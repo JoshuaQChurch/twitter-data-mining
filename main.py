@@ -6,7 +6,6 @@ from tweepy import OAuthHandler
 from tweepy import TweepError
 
 def hashtag_search(hashtags, api):
-
     # List to store tweet results 
     tweets = []
     for tag in hashtags:
