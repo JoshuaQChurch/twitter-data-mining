@@ -1,2 +1,8 @@
 # Ignore the credentials file 
 credentials.json 
+
+# Tweets data
+data/*
+
+# .DS_Store
+.DS_Store
