@@ -6,3 +6,9 @@ data/*
 
 # .DS_Store
 .DS_Store
+
+# Python c files
+*.pyc
+
+# VS Code prefs
+*.vscode
