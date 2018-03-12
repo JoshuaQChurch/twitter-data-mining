@@ -3,28 +3,53 @@ import os
 import pathlib 
 import time 
 import math
+import copy 
 
 import GetOlderTweets.got3 as got 
 
-def hashtag_search(hashtags):
-    # Tweet query configuration 
-    total_tweet_limit = 1000
-    max_tweets = math.ceil(total_tweet_limit / len(hashtags))
-    start_date = "2018-01-07"   # YYYY-MM-DD
-    end_date = "2018-01-08"     # YYYY-MM-DD
+def hashtag_search(query):
+    keys = list(query.keys())
+    
+    # Tweet query configuration
+    hashtags = query["hashtags"]
+    tweet_limit = 1000
+    if "tweet_limit" in keys: 
+        tweet_limit = query["tweet_limit"]
+
+    original_tweet_limit = copy.deepcopy(tweet_limit)
+
+    tweets_per_hashtag = math.ceil(tweet_limit / len(hashtags))
+    since = None 
+    if "since" in keys:
+        since = query["since"]   # YYYY-MM-DD
+    
+    until = None 
+    if "until" in keys:
+        until = query["until"]    # YYYY-MM-DD
+
+    modulo = len(hashtags) - 1
+    if modulo == 0:
+        modulo = 1
 
     # Counter to handle modulo operator
     # for switching between each hashtag 
     i = 0
-    while total_tweet_limit > 0: 
+    print("\nMining. Please wait...")
+    start = time.time()
+    while tweet_limit > 0: 
         # Alternate through the list of hashtags
         # to get to balance the tweet requests
-        hashtag = hashtags[i % (len(hashtags) - 1)]
+        hashtag = hashtags[i % modulo]
 
         # Specify the search criteria based on the above query configuration
         # https://github.com/Jefferson-Henrique/GetOldTweets-python
-        tweetCriteria = got.manager.TweetCriteria().setQuerySearch(hashtag).setSince(start_date).setUntil(end_date).setMaxTweets(max_tweets)
-        tweets = got.manager.TweetManager.getTweets(tweetCriteria)
+        query = got.manager.TweetCriteria().setQuerySearch(hashtag).setMaxTweets(tweets_per_hashtag)
+        if since:
+            query = query.setSince(since)
+        if until:
+            query = query.setUntil(until)
+
+        tweets = got.manager.TweetManager.getTweets(query)
         
         for tweet in tweets:
             attributes = dict(
@@ -43,10 +68,12 @@ def hashtag_search(hashtags):
             write_to_file(attributes, hashtag, tweet.id)
 
         # Deduct the results from the max 
-        total_tweet_limit -= len(tweets)
+        tweet_limit -= len(tweets)
 
         i += 1
-
+    
+    end = time.time()
+    print("Tweets Mined: %d | Time Elapsed: ~%d second(s)" % (original_tweet_limit, end-start))
 
 # Write the tweet dictionary to a persistent file                                 
 def write_to_file(attributes, hashtag, id):
@@ -63,24 +90,4 @@ def write_to_file(attributes, hashtag, id):
     with open(file, 'w+') as f:
         json.dump(attributes, f)
 
-
-if __name__ == "__main__":
-    # List of files in the current working directory 
-    files = os.listdir(os.getcwd())
-
-    # Verify that the user has supplied a list of hashtags
-    # to search for. 
-    if "hashtags" not in files:
-        print("Please provide a hashtags file before continuing.")
-        exit(-1)
-
-    # Extract the hashtags from the file 
-    with open("hashtags", mode='r', encoding=None) as hashtags:
-        hashtags = hashtags.readlines()
-
-        # Remove the newline character 
-        hashtags = [h.strip() for h in hashtags] 
-
-    # Search for each hashtag and collect the data
-    hashtag_search(hashtags)
 
