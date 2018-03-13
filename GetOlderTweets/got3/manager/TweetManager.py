@@ -63,8 +63,8 @@ class TweetManager:
 				tweet.formatted_date = datetime.datetime.fromtimestamp(dateSec).strftime("%a %b %d %X +0000 %Y")
 				tweet.retweets = retweets
 				tweet.favorites = favorites
-				tweet.mentions = " ".join(re.compile('(@\\w*)').findall(tweet.text))
-				tweet.hashtags = " ".join(re.compile('(#\\w*)').findall(tweet.text))
+				tweet.hashtags = " ".join([t for t in tweet.text.strip().replace("# ", '#').split(' ') if t.startswith('#')])
+				tweet.mentions = " ".join([t for t in tweet.text.strip().replace("@ ", '@').split(' ') if t.startswith('@')])
 				tweet.geo = geo
 				tweet.urls = ",".join(urls)
 				tweet.author_id = user_id
