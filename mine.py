@@ -7,43 +7,23 @@ import copy
 
 import GetOlderTweets.got3 as got 
 
-def hashtag_search(query):
-    keys = list(query.keys())
-    
+def hashtag_search(query):    
     # Tweet query configuration
     hashtags = query["hashtags"]
-    tweet_limit = 1000
-    if "tweet_limit" in keys: 
-        tweet_limit = query["tweet_limit"]
+    tweet_limit = query["tweet_limit"] 
+    since = query["since"]
+    until = query["until"] 
 
-    original_tweet_limit = copy.deepcopy(tweet_limit)
-
-    tweets_per_hashtag = math.ceil(tweet_limit / len(hashtags))
-    since = None 
-    if "since" in keys:
-        since = query["since"]   # YYYY-MM-DD
-    
-    until = None 
-    if "until" in keys:
-        until = query["until"]    # YYYY-MM-DD
-
-    modulo = len(hashtags) - 1
-    if modulo == 0:
-        modulo = 1
-
-    # Counter to handle modulo operator
-    # for switching between each hashtag 
-    i = 0
     print("\nMining. Please wait...")
     start = time.time()
-    while tweet_limit > 0: 
-        # Alternate through the list of hashtags
-        # to get to balance the tweet requests
-        hashtag = hashtags[i % modulo]
+    for hashtag in hashtags:
 
         # Specify the search criteria based on the above query configuration
         # https://github.com/Jefferson-Henrique/GetOldTweets-python
-        query = got.manager.TweetCriteria().setQuerySearch(hashtag).setMaxTweets(tweets_per_hashtag)
+        query = got.manager.TweetCriteria().setQuerySearch(hashtag)
+        
+        if tweet_limit >= 1: 
+            query = query.setMaxTweets(tweet_limit)
         if since:
             query = query.setSince(since)
         if until:
@@ -67,13 +47,8 @@ def hashtag_search(query):
             # Store results in a file
             write_to_file(attributes, hashtag, tweet.id)
 
-        # Deduct the results from the max 
-        tweet_limit -= len(tweets)
-
-        i += 1
-    
     end = time.time()
-    print("Tweets Mined: %d | Time Elapsed: ~%d second(s)" % (original_tweet_limit, end-start))
+    print("Tweets Mined: %d | Time Elapsed: ~%d second(s)" % (tweet_limit*len(hashtags), math.ceil(end-start)))
 
 # Write the tweet dictionary to a persistent file                                 
 def write_to_file(attributes, hashtag, id):
