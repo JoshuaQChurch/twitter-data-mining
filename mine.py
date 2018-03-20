@@ -22,15 +22,12 @@ def set_query(query):
     tweet_query = got.manager.TweetCriteria().setTopTweets(top_tweets)
 
     if username:
-        print("username")
         tweet_query = tweet_query.setUsername(username)
     
     if since:
-        print("since")
         tweet_query = tweet_query.setSince(since)
 
     if until:
-        print("until")
         tweet_query = tweet_query.setUntil(until)
     
     """
@@ -45,11 +42,9 @@ def set_query(query):
     """
 
     if language:
-        print("language")
         tweet_query = tweet_query.setLang(language)
 
     if tweet_limit >= 1:
-        print("tweet_limit")
         tweet_query = tweet_query.setMaxTweets(tweet_limit)
 
     return tweet_query 
