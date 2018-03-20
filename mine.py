@@ -7,30 +7,66 @@ import copy
 
 import GetOlderTweets.got3 as got 
 
-def hashtag_search(query):    
+
+def set_query(query):
     # Tweet query configuration
-    hashtags = query["hashtags"]
-    tweet_limit = query["tweet_limit"] 
+    username = query["username"]
     since = query["since"]
     until = query["until"] 
+    top_tweets = query["top_tweets"] 
+    near = query["near"]
+    within = query["within"]
+    language = query["language"]
+    tweet_limit = query["tweet_limit"]
 
+    tweet_query = got.manager.TweetCriteria().setTopTweets(top_tweets)
+
+    if username:
+        print("username")
+        tweet_query = tweet_query.setUsername(username)
+    
+    if since:
+        print("since")
+        tweet_query = tweet_query.setSince(since)
+
+    if until:
+        print("until")
+        tweet_query = tweet_query.setUntil(until)
+    
+    """
+    # Set near and within are not working with Python 3 currently.
+    if near:
+        print("near")
+        tweet_query = tweet_query.setNear(near)
+
+    if within:
+        print("within")
+        tweet_query = tweet_query.setWithin(within)
+    """
+
+    if language:
+        print("language")
+        tweet_query = tweet_query.setLang(language)
+
+    if tweet_limit >= 1:
+        print("tweet_limit")
+        tweet_query = tweet_query.setMaxTweets(tweet_limit)
+
+    return tweet_query 
+
+
+def mine(query):    
+    # Tweet query configuration
     print("\nMining. Please wait...")
     start = time.time()
-    for hashtag in hashtags:
 
-        # Specify the search criteria based on the above query configuration
-        # https://github.com/Jefferson-Henrique/GetOldTweets-python
-        query = got.manager.TweetCriteria().setQuerySearch(hashtag)
-        
-        if tweet_limit >= 1: 
-            query = query.setMaxTweets(tweet_limit)
-        if since:
-            query = query.setSince(since)
-        if until:
-            query = query.setUntil(until)
+    tweet_query = set_query(query)
 
-        tweets = got.manager.TweetManager.getTweets(query)
-        
+    if query["query_search"]:
+        count = 1
+        tweet_query = tweet_query.setQuerySearch(query["query_search"])
+        tweets = got.manager.TweetManager.getTweets(tweet_query)
+            
         for tweet in tweets:
             attributes = dict(
                 permalink = tweet.permalink, 
@@ -45,10 +81,38 @@ def hashtag_search(query):
             )
 
             # Store results in a file
-            write_to_file(attributes, hashtag, tweet.id)
+            write_to_file(attributes, "Search-Query", tweet.id)
+
+    else:
+        count = len(query["hashtags"])
+        for hashtag in query["hashtags"]:
+
+            # Specify the search criteria based on the above query configuration
+            # https://github.com/Jefferson-Henrique/GetOldTweets-python
+            tweet_query = tweet_query.setQuerySearch(hashtag)
+            tweets = got.manager.TweetManager.getTweets(tweet_query)
+            
+            for tweet in tweets:
+                attributes = dict(
+                    permalink = tweet.permalink, 
+                    username = tweet.username, 
+                    text = tweet.text, 
+                    date = str(tweet.date),
+                    retweets = tweet.retweets, 
+                    favorites = tweet.favorites, 
+                    mentions = tweet.mentions, 
+                    hashtags = tweet.hashtags.split(' '),
+                    geo = tweet.geo
+                )
+
+                # Store results in a file
+                write_to_file(attributes, hashtag, tweet.id)
 
     end = time.time()
-    print("Tweets Mined: %d | Time Elapsed: ~%d second(s)" % (tweet_limit*len(hashtags), math.ceil(end-start)))
+    print("Tweets Mined: %d | Time Elapsed: ~%d second(s)" % 
+        ((query["tweet_limit"] * count), math.ceil(end-start)))
+
+
 
 # Write the tweet dictionary to a persistent file                                 
 def write_to_file(attributes, hashtag, id):
