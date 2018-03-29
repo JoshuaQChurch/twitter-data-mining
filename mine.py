@@ -56,13 +56,15 @@ def mine(query):
     start = time.time()
 
     tweet_query = set_query(query)
+    tweet_count = 0
 
     if query["query_search"]:
-        count = 1
+        scale = 1
         tweet_query = tweet_query.setQuerySearch(query["query_search"])
         tweets = got.manager.TweetManager.getTweets(tweet_query)
-            
+        
         for tweet in tweets:
+            tweet_count += 1
             attributes = dict(
                 permalink = tweet.permalink, 
                 username = tweet.username, 
@@ -70,7 +72,7 @@ def mine(query):
                 date = str(tweet.date),
                 retweets = tweet.retweets, 
                 favorites = tweet.favorites, 
-                mentions = tweet.mentions, 
+                mentions = tweet.mentions.split(' '), 
                 hashtags = tweet.hashtags.split(' '),
                 geo = tweet.geo
             )
@@ -79,7 +81,7 @@ def mine(query):
             write_to_file(attributes, "Search-Query", tweet.id)
 
     else:
-        count = len(query["hashtags"])
+        scale = len(query["hashtags"])
         for hashtag in query["hashtags"]:
 
             # Specify the search criteria based on the above query configuration
@@ -88,6 +90,7 @@ def mine(query):
             tweets = got.manager.TweetManager.getTweets(tweet_query)
             
             for tweet in tweets:
+                tweet_count += 1
                 attributes = dict(
                     permalink = tweet.permalink, 
                     username = tweet.username, 
@@ -104,8 +107,14 @@ def mine(query):
                 write_to_file(attributes, hashtag, tweet.id)
 
     end = time.time()
-    print("Tweets Mined: %d | Time Elapsed: ~%d second(s)" % 
-        ((query["tweet_limit"] * count), math.ceil(end-start)))
+    
+    if query["tweet_limit"] >= 1:
+        expected = str(query["tweet_limit"] * scale) 
+    else:
+        expected = "No Limit."
+
+    print("Expected Tweets Mined: %s | Actual Tweets Mined: %d | Time Elapsed: ~%d second(s)" % 
+        (expected, tweet_count, math.ceil(end-start)))
 
 
 
