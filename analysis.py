@@ -4,75 +4,55 @@ that receive an attributes dictionary produced by reading
 from a tweet's json file
 '''
 
-# Disclaimer: Nothing works yet, <3 wil
-
 import extract
 from collections import Counter
 import functools
 import pandas as pd
 
-def run_analyses( analyses ):
-    df = extract.extract_all_to_df()
-
-    # results = [ analysis( tweet ) for analysis in analyses ]
-
-    master = []
-
-    for tweet in df:
-        results = [ analysis( tweet ) for analysis in analyses ]
-        master.append( results )
-        results = []
-
-    return master
-
 def word_count( string ):
     return Counter( string.split() )
 
 def concat_word_counters( a, b ):
-    return a.update( b )
+    return a + b
 
-def apply_to_all( df, function ):
-    return [ function( tweet ) for tweet in df ]
-
-def hashtag_word_count( tweet ):
-    hashtags = tweet[ "hashtags" ]
+def hashtag_word_count( series ):
+    hashtags = series.hashtags
     string = ''.join( hashtags ) 
 
     return word_count( string )
 
-def mention_word_count( tweet ):
-    mentions = tweet[ "mentions" ]
+def mention_word_count( series ):
+    mentions = series.mentions
     string = ''.join( mentions )
 
     return word_count( string )
 
-def tweet_word_count( tweet ):
-    tweets = tweet[ "text" ]
-
-    # counts = Counter( functools.reduce( lambda x, y: x + y, [ tweet.split() for tweet in tweets ] ) )
-    # return counts
+def tweet_word_count( series ):
+    tweets = series.text
 
     return word_count( tweets )
 
-def old_main():
-    analyses = [ tweet_word_count ]
-    run_analyses( analyses )
+def _apply_single_analysis( df, analysis ):
+    return [ analysis( df.loc[i] ) for i in range( df.shape[0] ) ]
 
-def main():
+def apply_analyses( df, analyses ):
+    if type( analyses ) is not list or len( analyses ) == 1:
+        # return a list of a list for consistency
+        return [ _apply_single_analysis( df, analyses ) ]
+
+    return [ _apply_single_analysis( df, analysis ) for analysis in analyses ]
+
+def use_case():
     df = extract.extract_all_to_df()
 
-    counters = [ tweet_word_count( df.loc[i] ) for tweet in df.iterrows() ]
-    counts = functools.reduce( concat_word_counts, counters )
+    analyses = [ tweet_word_count, mention_word_count, hashtag_word_count ]
+    results = apply_analyses( df, analyses )
+    reduction = [ sum( counter_list, Counter() ) for counter_list in results ]
 
-    print( counts.most_common( 5 ) )
+    for result in reduction:
+        print( result.most_common( 5 ) )
 
-def iterate():
-    df = extract.extract_all_to_df()
+    return reduction
 
-    for tweet in df.iterrows():
-        print( type( tweet ) )
-
-# for testing only
 if __name__ == "__main__":
-    # main()
-    iterate()
+    use_case()
